@@ -1,0 +1,15 @@
+[project]
+name = "huberman-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11.14"
+dependencies = [
+    "elasticsearch>=9.2.0",
+    "faster-whisper>=1.2.1",
+    "pandas>=2.3.3",
+    "psycopg>=3.2.12",
+    "requests>=2.32.5",
+    "sentence-transformers>=5.1.2",
+    "tqdm>=4.67.1",
+]
