@@ -3,17 +3,14 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 from threading import Lock
-from typing import Optional, List, Any
+from typing import Optional, List
 
+# from dataclasses import dataclass
+# @dataclass
+# class AgentConfig:
+#     index_name: str = "huberman"
+#     model: str = "openai:gpt-4o-mini"
 
-from dataclasses import dataclass
-
-@dataclass
-class AgentConfig:
-    index_name: str = "huberman"
-    model: str = "openai:gpt-4o-mini"
-    # model: str = "gpt-4o-mini"
-    
 class SearchTools:
     """
     Helper for encoding user queries and running vector searches against an Elasticsearch index.
@@ -26,25 +23,24 @@ class SearchTools:
         num_candidates: Default minimum number of candidates to evaluate in the kNN query.
     """
 
-    db_url = 'http://localhost:9200'
-    embedding_model = 'all-MPNet-base-v2'
+    db_url = "http://localhost:9200"
+    embedding_model = "all-MPNet-base-v2"
     num_results = 15
     num_candidates = 1000
-    index_name = 'huberman'
+    index_name = "huberman"
 
-    def __init__(self, config: Any | None = None):
-        """
-        Optionally copy settings from an AgentConfig-like object.
-        Only attributes present on the config are used, so the helper
-        works with lightweight configs defined in notebooks.
-        """
-        if config is not None:
-            for attr in ("db_url", "embedding_model", "num_results", "num_candidates", "index_name"):
-                if hasattr(config, attr):
-                    setattr(self, attr, getattr(config, attr))
+    def __init__( self, index_name: Optional[str] = None, embedding_model_name: Optional[str] = None, 
+                 db_url: Optional[str] = None, num_results: Optional[int] = None, 
+                 num_candidates: Optional[int] = None):
+
+        self.index_name = index_name or self.index_name
+        self.db_url = db_url or self.db_url
+        self.num_results = num_results or self.num_results
+        self.num_candidates = num_candidates or self.num_candidates
+        model_name = embedding_model_name or self.embedding_model
 
         self.db = Elasticsearch(self.db_url)
-        self.embedding_model = SentenceTransformer(self.embedding_model)
+        self.embedding_model = SentenceTransformer(model_name)
         self._embed_lock = Lock()
         
 
@@ -57,15 +53,18 @@ class SearchTools:
         with self._embed_lock:
             return self.embedding_model.encode(query, convert_to_numpy=True)
 
-    def vector_search(self, index_name: str, query: str, 
+    def vector_search(self, index_name: Optional[str] = None, query: str = "", 
                       num_results: Optional[int] = None, 
                       num_candidates: Optional[int] = None) -> List[dict[str, str]]:
         """
         Run a kNN vector search against Elasticsearch for the given text query and return matched chunks with metadata.
         """
 
-        if not self.index_name:
+        target_index = index_name or self.index_name
+        if not target_index:
             raise ValueError("index_name is required.")
+        if not query:
+            raise ValueError("query is required.")
         
         num_results = num_results or self.num_results
         num_candidates = num_candidates or max(num_results*5, self.num_candidates)
@@ -82,7 +81,7 @@ class SearchTools:
             },
             "_source": ["chunk", "episode_name", "start", "end"]
         }
-        response = self.db.search(index=index_name, body=knn_query)
+        response = self.db.search(index=target_index, body=knn_query)
 
         results = []
         for hit in response.get("hits", {}).get("hits", []):
