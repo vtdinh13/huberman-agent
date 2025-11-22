@@ -3,13 +3,8 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 from threading import Lock
-from typing import Optional, List
+from typing import Callable, List, NamedTuple, Optional
 
-# from dataclasses import dataclass
-# @dataclass
-# class AgentConfig:
-#     index_name: str = "huberman"
-#     model: str = "openai:gpt-4o-mini"
 
 class SearchTools:
     """
@@ -94,3 +89,43 @@ class SearchTools:
                 "chunk": source.get("chunk", ""),
             })
         return results
+
+
+
+class PreparedSearchTools(NamedTuple):
+    embedding: Callable[[str], List[float]]
+    search: Callable[[str, Optional[int], Optional[int]], List[dict[str, str]]]
+
+
+def prepare_search_tools() -> PreparedSearchTools:
+    """
+    Build callable wrappers that can be registered as tools with the agent.
+    """
+    search_client = SearchTools()
+
+    def embedding(query: str) -> List[float]:
+        vector = search_client.embed_query(query)
+        if hasattr(vector, "tolist"):
+            return vector.tolist()
+        if isinstance(vector, list):
+            return vector
+        return list(vector)
+
+    embedding.__name__ = "embed_query"
+
+    def search(
+        query: str,
+        index_name: Optional[str] = None,
+        num_results: Optional[int] = None,
+        num_candidates: Optional[int] = None,
+    ) -> List[dict[str, str]]:
+        return search_client.vector_search(
+            index_name=index_name,
+            query=query,
+            num_results=num_results,
+            num_candidates=num_candidates,
+        )
+
+    search.__name__ = "vector_search"
+
+    return PreparedSearchTools(embedding=embedding, search=search)
