@@ -61,7 +61,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_USERS_DEFAULT_THEME: light
+      GF_USERS_DEFAULT_THEME: dark
     volumes:
       - podcast_grafana:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -69,5 +69,8 @@ services:
     restart: unless-stopped
 volumes:
   podcast_postgres:
+    name: spotify-project_podcast_postgres
   podcast_es9:
+    name: spotify-project_podcast_es9
   podcast_grafana:
+    name: spotify-project_podcast_grafana
