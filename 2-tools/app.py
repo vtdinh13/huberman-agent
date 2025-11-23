@@ -242,6 +242,12 @@ if user_question:
                 st.error(f"Something went wrong: {exc}")
             else:
                 answer_placeholder.markdown(answer_md)
+                logfire.log(
+                    "streamlit_agent_response",
+                    user_question=user_question,
+                    answer=answer_md,
+                    tool_activity=list(tool_lines),
+                )
                 st.session_state["chat_history"].append(
                     {
                         "question": user_question,
