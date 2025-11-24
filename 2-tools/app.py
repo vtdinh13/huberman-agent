@@ -121,7 +121,7 @@ def stream_agent_response(
 st.set_page_config(page_title="Podcast Agent", page_icon="🧠", layout="wide")
 st.title(" 🧠 Podcast Agent")
 st.markdown(
-    "A conversational interface grounded in podcast episodes from the Huberman Lab, powered by `gpt-4o-mini` and PydanticAI. Data ingestion consisting of downloads via RSS, transcribes audio with Faster-Whisper, generates embeddings with Sentence Transformers, and indexes chunks in Elasticsearch. Over 350 episodes were indexed, ranging from December 21, 2021, to November 17, 2025."
+    "A conversational interface grounded in podcast episodes from the Huberman Lab, powered by `gpt-4o-mini` and PydanticAI. Data ingestion consists of audio downloads via RSS, transcription with Faster-Whisper, embedding generation with Sentence Transformers, and chunk indexing in Elasticsearch. Over 350 episodes were indexed, ranging from December 21, 2021, to November 17, 2025."
 )
 st.markdown(
     "The agent embeds user queries, retrieves relevant segments from the vector index, and streams time-stamped responses. All interactions are logged via Logfire."
