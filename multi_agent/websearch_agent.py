@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
-from pydantic_ai.messages import FunctionToolCallEvent
 
 from websearch_tools import get_page_content, web_search
 
 from typing import Optional
+from utils import AgentConfig
 
 
 websearch_instructions = """
@@ -29,15 +29,17 @@ YOUR TASKS:
    - Organize insights into clear topical clusters.
 
 - Final Key Findings  
-   - Provide an actionable, high-level summary of the most important insights across all sources.  
+   - Provide a conclusion of the most important insights across all sources.  
    - Every claim MUST be traceable to a cited article.
 
 RULES (MANDATORY):
-- ALWAYS INCLUDE REFERENCES (inline citations + URLs) for every fact, claim, or summary. If the name of the author is missing, include the name of the journal instead.
+- BE RIGOROUS ABOUT CITATIONS. Web links MUST be active, valid, and accurate. NEVER invent web links. Explictly state what you don't know.
+- ALWAYS INCLUDE REFERENCES -- author names, publishing year, urls -- for every fact, claim, or summary. If the name of the author is missing, include the name of the journal instead.
 - NEVER fabricate or speculate. If information is missing, explicitly state that it is not available.  
 - Use ONLY content from the retrieved webpages.  
 - Prioritize clarity, accuracy, and conciseness.  
 - Do not rely on prior knowledge—everything must come from the pages you fetched.
+- ALWAYS VERIFY AND VALIDATE that your text is valid JSON. If unsure, reformat before completing your task.
 
 AVAILABLE TOOLS:
 - web_search: search a list of specified websites for matching pages.  
@@ -91,33 +93,23 @@ class ResearchReport(BaseModel):
         return output.strip()
 
 
-class NamedCallback:
+# def create_websearch_agent():
+#     return Agent(
+#         name="websearch_agent",
+#         instructions=websearch_instructions,
+#         model="openai:gpt-4o-mini",
+#         tools=[web_search, get_page_content],
+#         output_type=ResearchReport,
+#     )
 
-    def __init__(self, agent):
-        self.agent_name = agent.name
+def create_websearch_agent(config: Optional[AgentConfig] = None) -> Agent:
+    """Create the websearch agent that uses Brave API tools."""
+    if config is None:
+        config = AgentConfig()
 
-    async def print_function_calls(self, ctx, event):
-        # Detect nested streams
-        if hasattr(event, "__aiter__"):
-            async for sub in event:
-                await self.print_function_calls(ctx, sub)
-            return
-
-        if isinstance(event, FunctionToolCallEvent):
-            tool_name = event.part.tool_name
-            args = event.part.args
-            print(f"TOOL CALL ({self.agent_name}): {tool_name}({args})")
-
-    async def __call__(self, ctx, event):
-        return await self.print_function_calls(ctx, event)
-
-
-def create_websearch_agent():
-    return Agent(
+    websearch_agent = Agent(
         name="websearch_agent",
         instructions=websearch_instructions,
-        model="openai:gpt-4o-mini",
-        tools=[web_search, get_page_content],
-        output_type=ResearchReport,
-        # max_validation_retries=3
-    )
+        model=config.model)
+    
+    return websearch_agent
