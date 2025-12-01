@@ -96,7 +96,7 @@ class SearchTools:
                 "k": num_results,
                 "num_candidates": num_candidates
             },
-            "_source": ["chunk", "episode_name", "start", "end"]
+            "_source": ["chunk", "episode_name", "start", "end", "participants"]
         }
         response = self.db.search(index=target_index, body=knn_query)
 
@@ -108,10 +108,10 @@ class SearchTools:
                 "episode_name": source.get("episode_name", ""),
                 "start": source.get("start", ""),
                 "end": source.get("end", ""),
+                "participants": source.get("participants", ""),
                 "chunk": source.get("chunk", ""),
             })
         return results
-
 
 
 class PreparedSearchTools(NamedTuple):
