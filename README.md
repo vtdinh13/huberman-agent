@@ -10,7 +10,7 @@ Building lasting habits is challenging without understanding the why behind them
 
 This AI agent acts as a personalized coach that delivers relevant knowledge from the podcast's extensive archive, searches the web for current research, and with access to all of this knowledge, recommends actionable takeaways grounded in expert interviews and scientific evidence.
 
-Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. Code allows you to create a local version. For the full UI experience, go here. 
+Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version, but you can also visit the [cloud version](https://habit-builder-ai-agent.streamlit.app/) for the full user UI experince.
 
 The agent is implemented with the Pydantic's BaseModel for strict Python data validation and PydanticAI's Agent class for structured output and agent tooling. OpenAI's `gpt-4o-mini` powers the reasoning and the tools given to the agent include: searching the knowledge base, retrieving recent research articles, and summarizing the current state of the research for a requested topic.
 
@@ -56,7 +56,7 @@ The diagram below outlines the development flow and supporting services.
 
 ## Ingestion
 
-0. Downloading and transcribing transcripts is a project on its own. A Parquet file of transcripts is provided to avoid this step. See [Ingestion](ingestion/README.md) if you'd like to replicate the end-to-end download and transcription flow yourself.
+0. Downloading and transcribing transcripts is a project on its own. A Parquet file containing transcripts is provided to avoid this step. See [Ingestion](ingestion/README.md) if you'd like to replicate the end-to-end download and transcription process yourself.
 
 1. Make sure Docker Desktop is running.
   
@@ -66,7 +66,7 @@ The diagram below outlines the development flow and supporting services.
     docker-compose up qdrant -d
     ```
   
-   *Optional*: Access the Qdrant dashboard at http://localhost:6333/dashboard.
+
 
 3. Chunking and uploading embeddings to the local Qdrant vector database takes ~2 hours. Run in the CLI:
 
@@ -77,7 +77,7 @@ The diagram below outlines the development flow and supporting services.
       --distance cosine \
       --target local 
     ```
-
+    
     <u>*Recommendation*</u>: Add the `--limit` argument to process only a sample of transcripts (each row corresponds to one episode/transcript). For example, `--limit 100` chunks and uploads the first 100 transcripts and finishes in about 40 minutes. 
 
       ```
@@ -89,9 +89,12 @@ The diagram below outlines the development flow and supporting services.
         --limit 100
       ```
 
-    *Optional*: You will be able to see your data on the Qdrant dashboard by pasting in your browser: http://localhost:6333/dashboard. 
+  4. *Optional*: You can see your data on the Qdrant dashboard by pasting in your browser: http://localhost:6333/dashboard. 
 
-    <img src=diagrams/qdrant_dashboard.png>
+  <img src=diagrams/qdrant_dashboard.png>
+
+  5. Shut the Qdrant service down once you're done with it: `docker-compose down`. 
+
 ## Agent
 1. Test if the vector database and agent works. Note that this version is limited.  You can only ask one question at a time. Run the following command on CLI: 
     - with uv: `uv run researchv1.py`
@@ -99,7 +102,7 @@ The diagram below outlines the development flow and supporting services.
 2. You can also run the agent locally on Streamlit. This option includes streaming parsing and continuing conversation. Run the following command on CLI:
     - with uv: `uv run streamlit run qdrant_app.py` 
     - with pip: `python streamlit run qdrant_app.py`
-
+3. There's a cloud version. You can interact with the agent without replicating the project or generate API keys [here](https://habit-builder-ai-agent.streamlit.app/).
 ## Test and Evaluation
 
 ## Logging and Monitoring
