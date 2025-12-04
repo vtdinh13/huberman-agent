@@ -8,47 +8,47 @@
 ![qdrant](https://img.shields.io/badge/Qdrant-v1.16-DC244C.svg?style=flat&)
 
 ## Introduction
-The Huberman Lab podcast consistently ranks in the top 5 across Apple and Spotify in the Health, Fitness, and Science categories, with over 7 million YouTube subscribers. While unequivocally popular, the episodes are long and often not easy to digest. Each episode averages 120 minutes and the longest episode, featuring Dr. Andy Galpin on "Optimal Protocols to Build Strength and Muscle," runs 279 minutes — that’s over 4.5 hours!
+The Huberman Lab podcast consistently ranks in the top 5 across Apple and Spotify in the Health, Fitness, and Science categories, with over seven million YouTube subscribers. While unequivocally popular, the episodes are long and often difficult to digest. Each episode averages 120 minutes, and the longest episode, featuring Dr. Andy Galpin on "Optimal Protocols to Build Strength and Muscle", runs 279 minutes  -- that's more than 4.5 hours!
 
-The podcast offers both knowledge and valuable tools that could improve our lives, but this content is hidden in excessively long episodes. An agentic system addresses this gap by acting as a personalized coach that extracts content from the podcast's knowledge base to recommend actionable tools that users can immediately implement. By grounding recommendations in evidence-based research and expert interviews from the podcast, the system ensures that recommendations are both scientifically sound and immediately actionable.
+The podcast offers evidenced-based insights and practical tools, but that information is hidden in excessively long episodes. This project addresses this gap by building an agentic system that acts as a personalized coach, surfaces relevant knowledge from the podcast archive, searches the web for the latest research on a requested topic, and recommends actionable takeaways. By grounding responses in expert interviews and the latest research, the agent can offer guidance and recommendations that are both scientifically sound and immediately actionable.
 
-This project introduces the Podcast Research AI Agent. Audio files were downloaded via RSS and transcribed with Faster Whisper. Transcriptions are subsequently chunked using a sliding window approach and embedded using Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. The final product utilizes the Qdrant vector database to store the knowledge base; however Elasticsearch was explored and code is provided for local implementation. 
+This repository introduces the Podcast Research AI Agent. Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. The Streamlit UI utilizes the Qdrant cloud, but Elasticsearch was explored and code to use the local database remains available.
 
-The Pydantic framework and PydanticAI SK were used to develop the AI Agent. With OpenAI's `gpt-4o-mini` as the underlying brain, the Research Agent was given the following tools: search the knowledge base, fetch the latest research articles, and dissect the articles to give a synthesized report of the most up to date research regarding a respective topic. 
+The agent is implemented with the Pydantic's BaseModel for strict Python data validation and PydanticAI's Agent class for structured output and agent tooling. OpenAI's `gpt-4o-mini` powers the reasoning and the tools given to the agent include: searching the knowledge base, retrieving recent research articles, and summarizing the current state of the research for a requested topic.
 
-Testing and evaluation combine unit testing with pytest, vibe checking, and a LLM judge.
+Testing and evaluation combine vibe checks, unit tests (pytest), and an LLM judge.
 
-The diagram below delineates the developmental process and products/services used to develop this Research Agent.
+The diagram below outlines the development flow and supporting services.
 
 <img src='diagrams/podcast-research-agent-system.png'>
 
 
 ## Setup
-1. `uv` was used to manage Python packages and environment. To replicate this project, choose either uv or pip. This project uses `uv`, so for better chances of reproducibility, use `uv`.
+1. `uv` manages Python packages and the virtual environment. To replicate the project you can use either `uv` or `pip`, but using `uv` will match this repository’s workflow most closely.
 
-    *Option 1*: Manage with uv
-      - Install `uv` if you don't have already it. See [Astral documentation](!https://docs.astral.sh/uv/getting-started/installation/) for instructions.
-      - Run `uv sync` on the command line to download all required packages to run this project.
+    *Option 1*: Manage with uv  
+      - Install `uv` if it is not already on your system. See the [Astral documentation](!https://docs.astral.sh/uv/getting-started/installation/) for installation steps.  
+      - Run `uv sync` to install all required packages.
       
-    *Option 2*: Manage with pip
-      - Run `pip install requirements.txt`. 
-2. Docker Desktop was used to run the Docker Engine daemon.
-    - Download Docker Desktop if you don't already have it. See [dockerdocs](!https://docs.docker.com/desktop/) for instructions.
-    - Start Docker Desktop to run the Docker Engine daemon. 
-    - Run `docker-compose up` to start all services or `docker-compose up -d` to run all services in detached mode so containers start in the background -- this way you can return to the command line and continue working.
-3. This project cannot run without API keys. 
+    *Option 2*: Manage with pip  
+      - Run `pip install -r requirements.txt`.
+2. Docker Desktop runs the Docker Engine daemon.
+    - Download Docker Desktop if needed (refer to the [Docker Desktop docs](!https://docs.docker.com/desktop/)).
+    - Start Docker Desktop so the Docker Engine daemon is available.
+    - Run `docker-compose up` to start every service, or `docker-compose up -d` to run them in detached mode so the containers stay in the background while you continue working in the terminal.
+3. API keys are required.
     
     *Required keys*
 
-    - OPENAI models were used. Sign up for an [API key from OPEN AI](!https://auth.openai.com/create-account) if you don't already have one. 
-    - The Brave API was used to develop the web search tool. Register for a [Brave API KEY](!https://api-dashboard.search.brave.com/register) here. 
+    - The agent uses OpenAI models. Sign up for an [OpenAI API key](!https://auth.openai.com/create-account) if you don't already have one. 
+    - The Brave API powers the web search tool. Register for a [Brave API key](!https://api-dashboard.search.brave.com/register).
 
     *Optional keys*
       
-      - It is enough to run the vector databases locally. To upload embeddings to the cloud, obtain an API key from [Elasticsearch](!https://cloud.elastic.co/registration?pg=global&plcmt=nav&cta=205352-primary) or [Qdrant](!https://login.cloud.qdrant.io/u/signup/identifier?state=hKFo2SBfRTd1VlpiZHlTRFJ5a1NoUGp4T20yenJDSzhsUHI4baFur3VuaXZlcnNhbC1sb2dpbqN0aWTZIGsxZ1RDOUc0U2UxMlNjNkdWbktLcXBneEM0em9WMlNJo2NpZNkgckkxd2NPUEhPTWRlSHVUeDR4MWtGMEtGZFE3d25lemc). 
+      - Local vector databases are sufficient, but if you want to upload embeddings to the cloud, generate keys from [Elasticsearch](!https://cloud.elastic.co/registration?pg=global&plcmt=nav&cta=205352-primary) or [Qdrant](!https://login.cloud.qdrant.io/u/signup/identifier?state=hKFo2SBfRTd1VlpiZHlTRFJ5a1NoUGp4T20yenJDSzhsUHI4baFur3VuaXZlcnNhbC1sb2dpbqN0aWTZIGsxZ1RDOUc0U2UxMlNjNkdWbktLcXBneEM0em9WMlNJo2NpZNkgckkxd2NPUEhPTWRlSHVUeDR4MWtGMEtGZFE3d25lemc). 
 
 
-4. API keys are managed via `direnv`. API keys are stored in `.env` file with `.envrc` containing dotenv so API keys are loaded automatically. Example of a `.env` file: 
+4. API keys are managed via `direnv`. Keys live in a `.env` file, and `.envrc` contains `dotenv` so the values load automatically. Example:
 
     ```.env 
     OPENAI_API_KEY=openai_api_key_value
@@ -58,34 +58,34 @@ The diagram below delineates the developmental process and products/services use
 
 ## Ingestion
 
-0. Downloading and transcribing transcripts is a process on its own. Here, I provide the transcripts as a parquet file. Please see [Ingestion](ingestion/README.md) if you'd like to replicate the process of downloading and transcribing.
+0. Downloading and transcribing transcripts is a project on its own. This repository ships with a Parquet file of transcripts. See [Ingestion](ingestion/README.md) if you'd like to replicate the end-to-end download and transcription flow yourself.
 
 1. Make sure Docker Desktop is running.
 
-2. I offered two vector database options: Elasticsearch and Qdrant. The `docker-compose` file is set up to use both services. You can run both if you choose. I suggest choosing database that suits you best and remove the one you don't need. Then, start either start all services in detached mode with `docker-compose up -d` or just the vector database option you chose.
+2. Two vector database options are available: Elasticsearch and Qdrant. The `docker-compose` file supports both. You can run both simultaneously, but picking the database that best fits your workflow and removing the other keeps resource usage light. Start every service in detached mode with `docker-compose up -d` or start just the service you selected.
 
-3. If you chose Elasticsearch, start the Elasticsearch and Kibana services.
+3. If you choose Elasticsearch, start both the Elasticsearch and Kibana services.
     ```
     docker-compose up elasticsearch kibana -d
     ```
   
-    *Optional*: Access the Kibana dashboard via your browser with http://localhost:5601. Note that this is not mandatory for ingestion. It is nice to interact with the embeddings via a UI but the agent can access the embeddings without the dasboard.
+    *Optional*: Access the Kibana dashboard at http://localhost:5601. It is a helpful UI for inspecting embeddings, but the agent can function without it.
 
 4. Ingestion with Elasticsearch
 
-    *Skip steps 7-8 if you implemented with Elasticsearch.*
+    *Skip steps 7-8 if you stay on Elasticsearch.*
 
 
   
-7. If you chose Qdrant, start the service:
+7. If you choose Qdrant, start the service:
 
     ```
     docker-compose up qdrant -d
     ```
   
-   *Optional*: To access the Qdrant dashboard: Paste http://localhost:6333/dashboard in your browser.
+   *Optional*: Access the Qdrant dashboard at http://localhost:6333/dashboard.
 
-8. To chunk and upload the embeddings to local Qdrant vector database takes about 2 hours. Run on  CLI:
+8. Chunking and uploading embeddings to the local Qdrant vector database takes ~2 hours. Run in the CLI:
 
     ```
     python ingestion/qdrant.py \
@@ -95,7 +95,7 @@ The diagram below delineates the developmental process and products/services use
       --target local 
     ```
 
-    <u>*Recommendation*</u>: Add the `--limit` argument to the command to process a sample. For example, `--limit 100` chunks and uploads 100 transcripts. This will take around 40 minutes. 
+    <u>*Recommendation*</u>: Add the `--limit` argument to process only a sample of rows (each row corresponds to one episode/transcript). For example, `--limit 100` chunks and uploads the first 100 transcripts and finishes in about 40 minutes. 
 
       ```
       python ingestion/qdrant.py \
