@@ -1,6 +1,7 @@
 from pydantic_ai.messages import FunctionToolCallEvent
 from dataclasses import dataclass
 
+
 class NamedCallback:
 
     def __init__(self, agent):
@@ -53,3 +54,4 @@ preferred_sites = [
     "nature",
     "science",
 ]
+
