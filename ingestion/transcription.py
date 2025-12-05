@@ -290,6 +290,7 @@ def ingest(
     database_url: str,
     limit: Optional[int] = None,
     skip_postgres: bool = False,
+    keep_transcripts: bool = False,
     rss_path: Optional[Path] = None,
 ) -> str:
     """
@@ -301,6 +302,7 @@ def ingest(
         database_url: Connection string for Postgres.
         limit: Optional maximum number of new episodes to process this run.
         skip_postgres: If True, leave transcripts on disk and skip database writes.
+        keep_transcripts: If False, delete transcript files after a successful Postgres insert.
         rss_path: Optional path to an existing RSS JSON; if absent a fresh copy is fetched.
 
     Returns:
@@ -383,6 +385,12 @@ def ingest(
                             transcript=transcript_text,
                         )
                 conn.commit()
+                if not keep_transcripts:
+                    try:
+                        transcript_path.unlink(missing_ok=True)
+                        print(f"Removed local transcript: {transcript_path}")
+                    except OSError as cleanup_error:
+                        logging.warning("Failed to remove %s: %s", transcript_path, cleanup_error)
                 
         except Exception as exc:  # pylint: disable=broad-except
             logging.exception("Skipping episode due to error: %s", ep_name)
@@ -445,6 +453,11 @@ def parse_args() -> argparse.Namespace:
         action='store_true',
         help='Skip writing transcripts to Postgres; leave transcript files on disk only.',
     )
+    parser.add_argument(
+        '--keep-transcripts',
+        action='store_true',
+        help='Keep transcript .txt files on disk even after writing to Postgres (default: delete once stored).',
+    )
     return parser.parse_args()
 
 
@@ -456,7 +469,8 @@ def main():
         transcript_table=args.transcript_table,
         database_url=args.database_url,
         limit=args.limit,
-        skip_postgres=args.skip_postgres
+        skip_postgres=args.skip_postgres,
+        keep_transcripts=args.keep_transcripts or args.skip_postgres,
     )
 
 
