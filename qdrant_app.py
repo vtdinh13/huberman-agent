@@ -1,6 +1,7 @@
 import ast
 import asyncio
 import json
+import os
 from typing import Any, Dict, List, Optional
 
 import logfire
@@ -9,6 +10,7 @@ from jaxn import JSONParserHandler, StreamingJSONParser
 from pydantic_ai.messages import FunctionToolCallEvent, ModelRequest, ModelResponse, TextPart
 
 from habit_agent import SearchResultResponse, create_research_agent
+from token_guard import activate_guard, TokenBudget, TokenBudgetExceeded
 
 logfire.configure()
 
@@ -211,12 +213,32 @@ def stream_agent_response(
     if final_payload_text:
         try:
             structured_output = SearchResultResponse.model_validate_json(final_payload_text)
-        except Exception:
+        except Exception as exc_json:
+            logfire.log(
+                "error",
+                "structured_output_parse_error",
+                {
+                    "question": question,
+                    "error": str(exc_json),
+                    "payload": final_payload_text,
+                    "method": "model_validate_json",
+                },
+            )
             try:
                 structured_output = SearchResultResponse.model_validate(
                     json.loads(final_payload_text)
                 )
-            except Exception:
+            except Exception as exc_model:
+                logfire.log(
+                    "error",
+                    "structured_output_parse_error",
+                    {
+                        "question": question,
+                        "error": str(exc_model),
+                        "payload": final_payload_text,
+                        "method": "model_validate",
+                    },
+                )
                 structured_output = None
     st.session_state[LAST_STRUCTURED_OUTPUT_KEY] = structured_output
 
@@ -323,6 +345,9 @@ def build_abbreviated_summary(
 
 
 HISTORY_WINDOW = 3
+TOKEN_ENCODING = os.getenv("TOKEN_GUARD_ENCODING", "cl100k_base")
+MODEL_CONTEXT_LIMIT = int(os.getenv("MODEL_CONTEXT_LIMIT", "128000"))
+TOKEN_CAP_RATIO = 0.9
 
 
 st.set_page_config(page_title="Habit Builder AI Agent", page_icon="🌱", layout="wide")
@@ -365,6 +390,21 @@ if clear_chat:
     st.session_state["message_history"] = []
     st.rerun()
 
+
+def gather_recent_texts(window: int) -> List[str]:
+    texts: List[str] = []
+    history = st.session_state.get("chat_history", [])
+    recent = history[-window:] if window else history
+    for exchange in recent:
+        question = (exchange.get("question") or "").strip()
+        answer = (exchange.get("answer") or "").strip()
+        if question:
+            texts.append(question)
+        if answer:
+            texts.append(answer)
+    return texts
+
+
 for exchange in st.session_state["chat_history"]:
     with st.chat_message("user"):
         st.markdown(exchange["question"])
@@ -385,6 +425,25 @@ if user_question:
         st.markdown(user_question)
     logfire.log("info", "user_question_received", {"question": user_question})
 
+    guard = TokenBudget(
+        encoding_name=TOKEN_ENCODING,
+        max_context_tokens=MODEL_CONTEXT_LIMIT,
+        cap_ratio=TOKEN_CAP_RATIO,
+    )
+    base_texts = gather_recent_texts(HISTORY_WINDOW) + [user_question.strip()]
+    try:
+        guard.initialize(base_texts)
+    except TokenBudgetExceeded as exc:
+        logfire.log(
+            "warning",
+            "token_guard_block_start",
+            {"question": user_question, "attempted_tokens": exc.attempted, "cap": exc.cap},
+        )
+        st.warning(
+            "I'm close to the model's context limit. Please clear the conversation or ask a shorter question."
+        )
+        st.stop()
+
     agent = load_agent()
     with st.chat_message("assistant"):
         tool_container = st.container()
@@ -401,12 +460,28 @@ if user_question:
 
         with st.spinner("Generating answer..."):
             try:
-                answer_md, new_messages = stream_agent_response(
-                    agent,
-                    user_question.strip(),
-                    tool_logger,
-                    recent_history,
-                    answer_placeholder,
+                with activate_guard(guard):
+                    answer_md, new_messages = stream_agent_response(
+                        agent,
+                        user_question.strip(),
+                        tool_logger,
+                        recent_history,
+                        answer_placeholder,
+                    )
+            except TokenBudgetExceeded as exc:
+                tool_placeholder.empty()
+                logfire.log(
+                    "warning",
+                    "token_guard_triggered",
+                    {
+                        "question": user_question,
+                        "attempted_tokens": exc.attempted,
+                        "cap": exc.cap,
+                        "label": exc.label,
+                    },
+                )
+                st.warning(
+                    "I stopped the tools because we're at the model's context limit. Please narrow your question or clear the chat."
                 )
             except Exception as exc:
                 tool_placeholder.empty()

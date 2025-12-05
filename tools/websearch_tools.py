@@ -1,7 +1,10 @@
-import requests
 import os
 import random
-from typing import Optional, List
+from typing import List, Optional
+
+import requests
+
+from token_guard import get_active_guard
 from .utils import preferred_sites
 
 
@@ -26,7 +29,7 @@ def search_web(query: str):
     try:
         response = requests.get(url, headers=headers)
         results = response.json().get("web", {}).get("results", [])
-        urls_all = [item.get("url") for item in results if item.get("url")]  
+        urls_all = [item.get("url") for item in results if item.get("url")]
         urls_filtered = [u for u in urls_all if any(dom in u for dom in preferred_sites)]
 
         if len(urls_filtered) > 3:
@@ -57,7 +60,11 @@ def get_page_content(url: str) -> Optional[str]:
     try:
         response = requests.get(reader_url, timeout=45)
         response.raise_for_status()  # raises for 4xx/5xx HTTP errors
-        return response.content.decode("utf-8")
+        text = response.content.decode("utf-8")
+        guard = get_active_guard()
+        if guard:
+            guard.consume_text(text, label=f"page_content:{url}")
+        return text
     except (requests.exceptions.RequestException, UnicodeDecodeError) as e:
         # Optional: log or print the error for debugging
         print(f"Error fetching content from {url}: {e}")

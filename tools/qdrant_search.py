@@ -1,12 +1,13 @@
 import os
 import re
 from threading import Lock
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 from sentence_transformers import SentenceTransformer
 
+from token_guard import get_active_guard
 
 IntLike = Union[str, int, float]
 
@@ -74,6 +75,15 @@ class QdrantSearchClient:
         if isinstance(vector, list):
             return vector
         return list(vector)
+
+    @staticmethod
+    def _safe_str(value: Any) -> str:
+        if value is None:
+            return ""
+        try:
+            return str(value)
+        except Exception:  # noqa: BLE001
+            return ""
 
     @staticmethod
     def _coerce_positive_int(value: Optional[IntLike], default: int) -> int:
@@ -154,13 +164,20 @@ class QdrantSearchClient:
                 payload = {"chunk": str(raw_point)}
             results.append(
                 {
-                    "episode_name": payload.get("episode_name", ""),
-                    "start": payload.get("start", ""),
-                    "end": payload.get("end", ""),
-                    "chunk": payload.get("chunk", ""),
+                    "episode_name": self._safe_str(payload.get("episode_name", "")),
+                    "start": self._safe_str(payload.get("start", "")),
+                    "end": self._safe_str(payload.get("end", "")),
+                    "chunk": self._safe_str(payload.get("chunk", "")),
                     "score": score,
                 }
             )
+        guard = get_active_guard()
+        if guard and results:
+            joined_chunks = " ".join(
+                item.get("chunk", "") for item in results if item.get("chunk")
+            ).strip()
+            if joined_chunks:
+                guard.consume_text(joined_chunks, label="qdrant_search_results")
         return results
 
 
