@@ -44,14 +44,14 @@ class TokenBudget:
         total_limit = max_context_tokens or int(os.getenv("MODEL_CONTEXT_LIMIT", "128000"))
         self.max_context_tokens = total_limit
         self.cap = max(1, int(total_limit * cap_ratio))
-        self.consumed = 0
+        self._consumed = 0
 
     @property
     def consumed(self) -> int:
-        return self.consumed
+        return self._consumed
 
     def reset(self) -> None:
-        self.consumed = 0
+        self._consumed = 0
 
     def count_text(self, text: Optional[str]) -> int:
         if not text:
@@ -73,10 +73,10 @@ class TokenBudget:
     def consume_tokens(self, tokens: int, label: Optional[str] = None) -> None:
         if tokens <= 0:
             return
-        attempted = self.consumed + tokens
+        attempted = self._consumed + tokens
         if attempted > self.cap:
             raise TokenBudgetExceeded(attempted, self.cap, label=label)
-        self.consumed = attempted
+        self._consumed = attempted
 
     def consume_text(self, text: Optional[str], label: Optional[str] = None) -> None:
         tokens = self.count_text(text)
