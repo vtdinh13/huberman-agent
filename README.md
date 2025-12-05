@@ -6,15 +6,15 @@
 ![qdrant](https://img.shields.io/badge/Qdrant-v1.16-DC244C.svg?style=flat&)
 
 ## Introduction
-Building lasting habits is challenging without understanding the why behind them. The Habit Builder AI Agent bridges this gap by drawing on the Huberman Lab podcast archive—a top 5 podcast on Apple and Spotify with over 7 million YouTube subscribers—to transform complex scientific insights into actionable habits supported by the latest research.
+Building lasting habits is challenging without understanding the *why* behind them. The Habit Builder AI Agent bridges this gap by drawing on the Huberman Lab podcast archive—a top 5 podcast on Apple and Spotify with over 7 million YouTube subscribers—to transform complex scientific insights into actionable habits supported by the latest research.
 
 This AI agent acts as a personalized coach that delivers relevant knowledge from the podcast's extensive archive, searches the web for current research, and with access to all of this knowledge, recommends actionable takeaways grounded in expert interviews and scientific evidence.
 
-Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version if you replicate this project, or you can also visit the [cloud version](https://habit-builder-ai-agent.streamlit.app/) for a complete UI experince.
+Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version if you replicate this project, or you can also visit the [Streamlit cloud version](https://habit-builder-ai-agent.streamlit.app/) for a complete UI experince.
 
 The agent is implemented with the Pydantic's BaseModel for strict Python data validation and PydanticAI's Agent class for structured output and agent tooling. OpenAI's `gpt-4o-mini` powers the reasoning and the tools given to the agent include: searching the knowledge base, retrieving recent research articles, and summarizing the current state of the research for a requested topic.
 
-Testing and evaluation combine vibe checks, unit tests (pytest), and a LLM judge. Logging/monitoring can be done locally or with Pydantic Logfire.
+Testing and evaluation combine vibe checks, unit tests (via the pytest framework), and a LLM judge. Logging/monitoring can be done locally or with Pydantic Logfire.
 
 The diagram below outlines the development flow and supporting services.
 
@@ -101,19 +101,36 @@ The diagram below outlines the development flow and supporting services.
 2. You can also run the agent locally on Streamlit. This option includes streaming parsing and continuing conversation. Run the following command on CLI:
     - with uv: `uv run streamlit run qdrant_app.py` 
     - with pip: `python streamlit run qdrant_app.py`
-3. Access to the local streamlit app: http://localhost:8505/.
-4. There's a streamlit cloud version. You can [interact with the agent](https://habit-builder-ai-agent.streamlit.app/) without having to replicate the repo.
-## Test and Evaluation
+3. Access the local streamlit app: http://localhost:8505/.
+4. There's also a streamlit cloud version. You can [interact with the agent](https://habit-builder-ai-agent.streamlit.app/) without having to replicate the repo.
+
+## Test
 *Option 1: Run tests on CLI*
-1. To run all files with the prefix test_*, run on CLI: `make test`. The following should be displayed:
+1. To run all files with the prefix test_*, run on CLI: `make test`. A version of the following should be displayed:
     <img src=diagrams/test_pytest.png>
 
 *Option 2: Run tests in Visual Stuido code*
 1. On the left side banner of Visual Studio, click on the testing icon: 
-2. Select the the testing folder. There are three triangles pointing to the right. Select the first triangle to run your test. 
+2. Select the testing folder. There are three triangles pointing to the right. Select the first triangle to run your test. 
   <image src=diagrams/test_vscode.png>
 
-  
+
+## Evaluation
+1. Running the LLM takes ~5 minutes. Run on CLI from the root directory: 
+    ```
+      uv run python -m evaluation.eval_orchestrator \
+      --csv evaluation/gt_sample.csv \
+      --agent-model gpt-4o-mini \
+      --judge-model gpt-5-nano \
+      --concurrency 2 
+    ```
+
+    You should get a version of the following:
+      
+      <img src=diagrams/llm_judge_report.png>
+
+
+
 ## Logging and Monitoring
 1. User interactions are logged with Pydantic Logfire. You have to [make an account](https://logfire.pydantic.dev/) to use it. 
 2. Create a new project. 
@@ -126,6 +143,9 @@ The diagram below outlines the development flow and supporting services.
 5. Once authentication is complete, run `uv run habit_agent_logfire.py`. The script invokes the agent. 
 
     <img src=diagrams/logfire_run.png>
-6. A `logs` folder will also be created for you to log user interactions in your current directory.
+6. A `logs` folder will also be generated to log user interactions in your current directory.
     
     <img src=diagrams/local_log.png>
+
+
+  
