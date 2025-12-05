@@ -1,10 +1,10 @@
 from habit_agent import SearchResultResponse
-import test_main
+import main
 from .utils import get_tool_calls
 
 def test_search_references():
     user_prompt = "What is the association between coffee and Alzheimer's?"
-    result = test_main.run_agent_sync(user_prompt=user_prompt)
+    result = main.run_agent_sync(user_prompt=user_prompt)
 
     response: SearchResultResponse = result.output
     print(response.format_response())
@@ -13,7 +13,7 @@ def test_search_references():
 
 def test_get_page_content_no_more_than_3():
     user_prompt = "What is the latest research on coffee and Alzheimer's?"
-    result = test_main.run_agent_sync(user_prompt=user_prompt)
+    result = main.run_agent_sync(user_prompt=user_prompt)
 
     tool_calls = get_tool_calls(result)
     get_page_content_calls = [t for t in tool_calls if t.name == "get_page_content"]
