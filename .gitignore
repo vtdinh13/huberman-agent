@@ -14,5 +14,3 @@ wheels/
 # os
 .DS_Store
 
-#vs
-.vscode/
