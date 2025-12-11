@@ -10,7 +10,9 @@ Building lasting habits is challenging without understanding the *why* behind th
 
 This AI agent acts as a personalized coach that delivers relevant knowledge from the podcast's extensive archive, searches the web for current research, and with access to all of this knowledge, recommends actionable takeaways grounded in expert interviews and scientific evidence.
 
-Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version if you replicate this project, or you can also visit the [Streamlit cloud version](https://habit-builder-ai-agent.streamlit.app/) for a complete UI experince.
+Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version if you replicate this project, or you can also visit the [Streamlit cloud version](https://habit-builder-ai-agent.streamlit.app/). Below is a demo:
+<img src='diagrams/habit-builder-ai-agentv2--speed.gif'>
+
 
 The agent is implemented with the Pydantic's BaseModel for strict Python data validation and PydanticAI's Agent class for structured output and agent tooling. OpenAI's `gpt-4o-mini` powers the reasoning and the tools given to the agent include: searching the knowledge base, retrieving recent research articles, and summarizing the current state of the research for a requested topic.
 
@@ -22,11 +24,16 @@ The diagram below outlines the development flow and supporting services.
 
 
 ## Setup
-1. `uv` manages Python packages and the virtual environment. To replicate the project you can use either `uv` or `pip`, but using `uv` will match this repository’s workflow most closely.
+0. Clone this repo:
+    ```bash
+    git clone https://github.com/vtdinh13/habit-builder-ai-agent.git
+    ```
+
+1. `uv` manages Python packages and the virtual environment. To replicate the project you can use either `uv` or `pip`, but using `uv` will match this repository’s workflow most closely. Choose Option 1 or 2, but not both.
 
     *Option 1*: Manage with uv  
-      - Install `uv` if it is not already on your system. See [Astral documentation](https://docs.astral.sh/uv/getting-started/installation/) for installation steps.  
-      - Run `uv sync` to install all required packages.
+    - Install `uv` if it is not already on your system. See [Astral documentation](https://docs.astral.sh/uv/getting-started/installation/) for installation steps.  
+    - Run `uv sync` to install all required packages and start uv's managed virtual environment.
       
     *Option 2*: Manage with pip  
       - Run `pip install -r requirements.txt`.
@@ -48,15 +55,20 @@ The diagram below outlines the development flow and supporting services.
 
 4. API keys are managed via `direnv`. Keys live in a `.env` file, and `.envrc` contains `dotenv` so the values load automatically. Example:
 
-    ```.env 
+    ```
     OPENAI_API_KEY=openai_api_key_value
     BRAVE_API_KEY=brave_api_key_value
     ```
 
-
+5. If you want to skip `direnv` and `.env` entirely, export the keys and its values:
+    ```bash
+    export OPENAI_API_KEY="openai_api_key_value"
+    export BRAVE_API_KEY="brave_api_key_value"
+    ```
+    The values to the API keys are now available in your current working environment. Exports only apply to this one session; you'd have to export it again if you need to revist this project.
 ## Ingestion
 
-0. Downloading and transcribing transcripts is a project on its own. A Parquet file containing transcripts is provided to avoid this step. See [Ingestion](ingestion/README.md) if you'd like to replicate the end-to-end download and transcription process yourself.
+0. Downloading and transcribing transcripts is a project on its own. A Parquet file containing transcripts is provided to avoid this step. See [Ingestion](ingestion/README.md) if you'd like to replicate the transcription process yourself.
 
 1. Make sure Docker Desktop is running.
   
@@ -79,8 +91,8 @@ The diagram below outlines the development flow and supporting services.
     
     <u>*Recommendation*</u>: Add the `--limit` argument to process only a sample of transcripts (each row corresponds to one episode/transcript). For example, `--limit 100` chunks and uploads the first 100 transcripts. This cuts the processing time to about 40 minutes. 
 
-      ```
-      python ingestion/qdrant.py \
+      ```bash
+      uv run python ingestion/ingest_qdrant.py \
         --parquet-path transcripts/transcripts.parquet \
         --collection-name transcripts \
         --distance cosine \
