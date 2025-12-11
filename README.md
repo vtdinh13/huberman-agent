@@ -11,6 +11,7 @@ Building lasting habits is challenging without understanding the *why* behind th
 This AI agent acts as a personalized coach that delivers relevant knowledge from the podcast's extensive archive, searches the web for current research, and with access to all of this knowledge, recommends actionable takeaways grounded in expert interviews and scientific evidence.
 
 Audio files are downloaded via RSS, transcribed with Faster Whisper, chunked with a sliding window, and embedded with Hugging Face's Sentence Transformer model `all-MPNet-base-v2`. Qdrant stores embeddings and Streamlit offers a nice interface to interact with the agent. You will be able to create the local Streamlit version if you replicate this project, or you can also visit the [Streamlit cloud version](https://habit-builder-ai-agent.streamlit.app/). Below is a demo:
+
 <img src='diagrams/habit-builder-ai-agentv2--speed.gif'>
 
 
@@ -79,13 +80,15 @@ The diagram below outlines the development flow and supporting services.
     ```
   
 
-3. Chunking and uploading embeddings to the local Qdrant vector database takes ~2 hours. Run in the CLI:
+3. The speed of chunking and embedding text upserting into Qdrant depends on your processor. Adjust the parquet and embedding batch size according to the capability of your machine. The default is set at 128. Chunking and uploading embeddings to the local Qdrant vector database takes ~2 hours.
 
-    ```
-    python ingestion/qdrant.py \
+    ```bash
+    uv run python ingestion/ingest_qdrant.py \
       --parquet-path transcripts/transcripts.parquet \
       --collection-name transcripts \
       --distance cosine \
+      --parquet-batch-size 128 \ 
+      --embedding-batch-size 128 \ 
       --target local 
     ```
     
@@ -96,24 +99,52 @@ The diagram below outlines the development flow and supporting services.
         --parquet-path transcripts/transcripts.parquet \
         --collection-name transcripts \
         --distance cosine \
+        --parquet-batch-size 128 \ 
+        --embedding-batch-size 128 \ 
         --target local \
         --limit 100
       ```
 
-  4. *Optional*: You can see your data on the Qdrant dashboard in your browser: http://localhost:6333/dashboard. 
+  4. If you are using pip to manage your packages, run the following instead:
+
+      ```bash
+      python ingestion/ingest_qdrant.py \
+        --parquet-path transcripts/transcripts.parquet \
+        --collection-name transcripts \
+        --distance cosine \
+        --parquet-batch-size 128 \ 
+        --embedding-batch-size 128 \ 
+        --target local \
+        --limit 100
+      ```
+
+  5. *Optional*: You can see your data in the Qdrant dashboard: http://localhost:6333/dashboard. 
   
       <img src=diagrams/qdrant_dashboard.png>
 
-  5. Shut the Qdrant service down once you're done with it: `docker-compose down`. 
+  6. Keep the Qdrant service up to run the agent. Shut the Qdrant service down when the service is no longer neccessary: `docker-compose down qdrant`. 
 
 ## Agent
-1. Test if the vector database and agent works. Note that the Qdrant service has to be running via Docker and that this option is limited -- you can only ask one question at a time and you cannot ask follow up questions. Run the following command on CLI: 
-    - with uv: `uv run habit_agent_run.py`
-    - with pip: `python habit_agent_run.py`
+1. The Qdrant database is ready for querying. Note that the Qdrant service has to be running via Docker. Testing on CLI allows you to ask only one question at a time and you cannot ask follow up questions. Make sure that your API keys are available in your current working environment.
+    - with uv:
+      ```bash
+      uv run habit_agent_run.py
+      ```
+  
+    - with pip: 
+      ```bash
+      python habit_agent_run.py
+      ```
 2. You can also run the agent locally on Streamlit. This option includes streaming parsing and continuing conversation. Run the following command on CLI:
-    - with uv: `uv run streamlit run qdrant_app.py` 
-    - with pip: `python streamlit run qdrant_app.py`
-3. Access the local streamlit app: http://localhost:8505/.
+    - with uv: 
+      ```bash
+      uv run streamlit run qdrant_app_no_logfire.py
+      ```
+    - with pip: 
+      ```bash
+      python streamlit run qdrant_app_no_logfire.py
+      ```
+3. A window should pop up in your browser giving you access to the streamlit app. Paste this link in your browser if that is not the case: http://localhost:8505/.
 4. There's also a streamlit cloud version. You can [interact with the agent](https://habit-builder-ai-agent.streamlit.app/) without having to replicate the repo.
 
 ## Test
