@@ -113,7 +113,7 @@ def append_eval_record(record: dict) -> None:
 
 @pytest.mark.asyncio
 async def test_eval_agent():
-    user_prompt = "what is better, match or coffee"
+    user_prompt = "What is the association between coffee and Alzheimer's?"
 
     result = await main.run_agent(user_prompt)
 
